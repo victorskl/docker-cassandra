@@ -1,0 +1,61 @@
+# REF
+# https://gist.github.com/naumanbadar/aad6a25974b30adcb3c89b5f868627da
+# https://registry.hub.docker.com/_/cassandra
+
+version: "3"
+
+volumes:
+  cas1:
+  cas2:
+  cas3:
+
+services:
+
+  cas1:
+    image: cassandra:4
+    container_name: cas1
+    ports:
+      - "7000:7000"
+      - "9042:9042"
+    volumes:
+      - "cas1:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_SEEDS=cas1"
+      - "CASSANDRA_CLUSTER_NAME=cassandra-cluster"
+      - "CASSANDRA_DC=dc1"
+      - "CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch"
+    restart: always
+
+  cas2:
+    image: cassandra:4
+    container_name: cas2
+    ports:
+      - "7001:7000"
+      - "9043:9042"
+    volumes:
+      - "cas2:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_SEEDS=cas1"
+      - "CASSANDRA_CLUSTER_NAME=cassandra-cluster"
+      - "CASSANDRA_DC=dc1"
+      - "CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch"
+    restart: always
+    depends_on:
+      - cas1
+
+  cas3:
+    image: cassandra:4
+    container_name: cas3
+    ports:
+      - "7002:7000"
+      - "9044:9042"
+    volumes:
+      - "cas3:/var/lib/cassandra"
+    environment:
+      - "CASSANDRA_SEEDS=cas1"
+      - "CASSANDRA_CLUSTER_NAME=cassandra-cluster"
+      - "CASSANDRA_DC=dc1"
+      - "CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch"
+    restart: always
+    depends_on:
+      - cas1
