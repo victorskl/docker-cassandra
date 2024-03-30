@@ -2,12 +2,12 @@
 # https://gist.github.com/naumanbadar/aad6a25974b30adcb3c89b5f868627da
 # https://registry.hub.docker.com/_/cassandra
 
-version: "3"
+version: "3.8"
 
-volumes:
-  cas1:
-  cas2:
-  cas3:
+#volumes:
+#  cas1:
+#  cas2:
+#  cas3:
 
 services:
 
@@ -17,14 +17,21 @@ services:
     ports:
       - "7000:7000"
       - "9042:9042"
-    volumes:
-      - "cas1:/var/lib/cassandra"
+#    volumes:
+#      - "cas1:/var/lib/cassandra"
     environment:
       - "CASSANDRA_SEEDS=cas1"
       - "CASSANDRA_CLUSTER_NAME=cassandra-cluster"
       - "CASSANDRA_DC=dc1"
       - "CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch"
     restart: always
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+      start_interval: 5s
 
   cas2:
     image: cassandra:4
@@ -32,8 +39,8 @@ services:
     ports:
       - "7001:7000"
       - "9043:9042"
-    volumes:
-      - "cas2:/var/lib/cassandra"
+#    volumes:
+#      - "cas2:/var/lib/cassandra"
     environment:
       - "CASSANDRA_SEEDS=cas1"
       - "CASSANDRA_CLUSTER_NAME=cassandra-cluster"
@@ -41,7 +48,15 @@ services:
       - "CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch"
     restart: always
     depends_on:
-      - cas1
+      cas1:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+      start_interval: 5s
 
   cas3:
     image: cassandra:4
@@ -49,8 +64,8 @@ services:
     ports:
       - "7002:7000"
       - "9044:9042"
-    volumes:
-      - "cas3:/var/lib/cassandra"
+#    volumes:
+#      - "cas3:/var/lib/cassandra"
     environment:
       - "CASSANDRA_SEEDS=cas1"
       - "CASSANDRA_CLUSTER_NAME=cassandra-cluster"
@@ -58,4 +73,12 @@ services:
       - "CASSANDRA_ENDPOINT_SNITCH=GossipingPropertyFileSnitch"
     restart: always
     depends_on:
-      - cas1
+      cas2:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "cqlsh", "-e", "describe keyspaces"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+      start_interval: 5s
