@@ -19,6 +19,7 @@ docker exec -it cassandra cqlsh
 
 (alternatively)
 docker exec -it cassandra cqlsh -f /scripts/data.cql
+docker exec -it cassandra nodetool info
 ```
 
 On Client CLI
@@ -47,6 +48,8 @@ REF:
 
 ## Cluster
 
+Make sure to have enough resources allocated to your container runtime. Tested with 16GB, 12 cores.
+
 ```
 docker compose -f docker-compose-cluster.yml up -d
 docker compose -f docker-compose-cluster.yml ps
@@ -64,16 +67,23 @@ docker exec -it cas1 nodetool status
     ===============
     Status=Up/Down
     |/ State=Normal/Leaving/Joining/Moving
-    --  Address       Load        Tokens  Owns (effective)  Host ID                               Rack
-    UN  192.168.32.2  74.11 KiB   16      64.7%             1e539577-abcb-41b5-b769-1b4264bab74b  rack1
-    UN  192.168.32.4  128.04 KiB  16      76.0%             502de358-809f-43f0-9560-b3ac7171aeaf  rack1
-    UN  192.168.32.3  74.12 KiB   16      59.3%             aea74503-8ccf-4333-a522-3efee74d4cb9  rack1
+    --  Address     Load        Tokens  Owns (effective)  Host ID                               Rack
+    UN  172.23.0.3  75.21 KiB   16      59.3%             86fb09a9-c987-4ce8-b96a-90ad7dd79cf2  rack1
+    UN  172.23.0.4  109.23 KiB  16      76.0%             a14c7c45-064d-4a62-885d-f0223b0a40d9  rack1
+    UN  172.23.0.2  109.38 KiB  16      64.7%             72b9fac8-c80e-4dec-9615-01ca14006d3c  rack1
+```
+
+```
+docker exec -it cas1 nodetool status
+docker exec -it cas1 nodetool ring
+docker exec -it cas1 nodetool gossipinfo
+docker exec -it cas1 nodetool describecluster
 ```
 
 REF:
 - https://cassandra.apache.org/doc/latest/cassandra/tools/nodetool/nodetool.html
 
-Testing:
+### Testing the Cluster
 
 - Populate test data using `cas1`
 ```
@@ -105,7 +115,7 @@ docker exec -it cas3 cqlsh -e "select * from MyKeySpace.MyColumns;"
 (1 rows)
 ```
 
-### Data Modelling
+## Data Modelling
 
 DOC:
 - https://cassandra.apache.org/doc/latest/cassandra/data_modeling/index.html
@@ -116,20 +126,56 @@ Column Family:
 - https://www.google.com/search?q=cassandra+column+family
 - https://www.baeldung.com/cassandra-column-family-data-model
 - https://stackoverflow.com/questions/18824390/whats-the-difference-between-creating-a-table-and-creating-a-columnfamily-in-ca
+- It is a 2-dimensional key-value store under the hood.
+    ```
+    "Employees" : {
+               row1 : { "ID":1, "Last":"Cooper", "First":"James", "Age":32},
+               row2 : { "ID":2, "Last":"Bell", "First":"Lisa", "Age":57, "Address":"Earth"},
+               row3 : { "ID":3, "Last":"Young", "First":"Jospeh", "Age":45},
+               ...
+         }
+    ```
 
-### AWS
+### Example: Hotel app
+
+Workout exercise: _Query-driven data modelling_ walkthrough https://cassandra.apache.org/doc/stable/cassandra/data_modeling/index.html
+
+Pattern: [the wide partition pattern](https://cassandra.apache.org/doc/stable/cassandra/data_modeling/data_modeling_logical.html#patterns-and-anti-patterns)
+
+```
+cqlsh -f hotel.schema.hotel.cql
+cqlsh -f hotel.schema.reservation.cql
+```
+
+```
+cqlsh -e 'describe keyspaces'
+cqlsh -e 'describe hotel'
+cqlsh -e 'describe reservation'
+```
+
+```
+cqlsh -f hotel.insert.cql
+```
+
+```
+cqlsh -f hotel.select.cql
+```
+
+```
+cqlsh -f hotel.drop.cql
+```
+
+## AWS
 - https://aws.amazon.com/keyspaces/what-is-cassandra/
 - https://docs.aws.amazon.com/keyspaces/latest/devguide/data-modeling.html
 
 Keyspaces vs Cassandra:
 - https://stackoverflow.com/questions/69102079/why-do-native-cql-functions-like-min-and-max-not-work-in-amazon-keyspaces
 
-### Notes
+## Notes
 
-Alternatively, see Bitnami distribution for more serious docker setup
-- https://github.com/bitnami/bitnami-docker-cassandra
-
-And the following on some production setup aspect
+For more serious production setup, see the followings.
 - https://k8ssandra.io
 - http://cassandra-reaper.io
+- https://github.com/akka/akka-persistence-cassandra
 - https://github.com/thelastpickle/cassandra-medusa
